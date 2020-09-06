@@ -30,15 +30,18 @@ def main(d=None):
     # This program is meant to run at night to retrieve data for previous day.
     yesterday = ((d or date.today()) + timedelta(-1)).strftime('%Y-%m-%d')
 
-    def inner(indic, dataset, db_table):
+    def inner(indic, dataset, db_table, no_age_group=False):
         lines = []
         day = None
         # For all age groups available.
         for age_group in [9, 19, 29, 39, 49, 59, 69, 79, 89, 90]:
             print(f'Retrieve {indic}/{dataset}' +
-                  f'for age_group {age_group} on {yesterday}...')
+                  (f'for age_group {age_group}' if not no_age_group else '') +
+                  f'on {yesterday}...')
             # First, retrieve the data from API
             filters = dict(cl_age90=f'{age_group:02}', jour=yesterday)
+            if no_age_group:
+                del filters['cl_age90']
             indicator = get_indicator(indic, dataset, filters)
             if indicator:
                 # Some data management
@@ -53,6 +56,9 @@ def main(d=None):
                     # We'll insert in db later.
                     lines.append([day, str(age_group), reg_id,
                                   value if value != -9999 else None])
+                if no_age_group:
+                    # HACK to get out after first loop
+                    break
         if not getattr(db, f'check_data_{db_table}')(day):
             print('-> No new data.')
             return
@@ -61,15 +67,19 @@ def main(d=None):
         for line in lines:
             getattr(db, add_method)(*line)
 
-    models = [
+    loop = {False: [
         ('hosp', 'covid_hospit_clage10', 'hosp_by_age_group'),
         ('p', 'sp_pos_quot', 'posit_by_age_group'),
         ('t', 'sp_pos_quot', 'test_by_age_group'),
-    ]
-    for model in models:
-        inner(model[0], model[1], model[2])
+    ], True: [
+        ('incid_dc', 'covid_hospit_incid', 'morts')
+    ]}
+    for no_age_group, models in loop.items():
+        for model in models:
+            inner(model[0], model[1], model[2], no_age_group)
     db.commit()
 
 
 if __name__ == '__main__':
-    main()
+    d = date(2020, 3, 20)
+    while d < date.today():

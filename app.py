@@ -24,6 +24,12 @@ def test():
         return jsonify(db.get_test())
 
 
+@app.route('/api/morts')
+def morts():
+    with Db() as db:
+        return jsonify(db.get_morts())
+
+
 @app.route('/')
 def index():
     return render_template('index.html')

@@ -59,6 +59,15 @@ class Db():
             (region, age_group, date, value)
         )
 
+    def add_morts_line(self, date, age_group, region, value):
+        # age_group is not used here.
+        self.cur.execute(
+            '''INSERT INTO morts
+                (region_id, date, value)
+                VALUES((SELECT p_id FROM regions WHERE id=?), ?, ?)''',
+            (region, date, value)
+        )
+
     def get_n_lines_for_date(self, table, date):
         cur = self.conn.cursor()
         cur.execute(f'SELECT COUNT(p_id) FROM {table} WHERE date=?', (date,))
@@ -84,6 +93,9 @@ class Db():
     def check_data_test_by_age_group(self, date):
         return self.check_n_lines_or_delete('test_by_age_group', date)
 
+    def check_data_morts(self, date):
+        return self.check_n_lines_or_delete('morts', date, 19)
+
     def get_by_age_group(self):
         self.cur.execute(
             '''SELECT date, age_group, SUM(value)
@@ -108,6 +120,16 @@ class Db():
         self.cur.execute(
             '''SELECT date, SUM(value)
                FROM test_by_age_group
+               GROUP BY date
+               ORDER BY date
+            ''')
+        return [dict(date=v[0], value=v[1])
+                for v in self.cur.fetchall()]
+
+    def get_morts(self):
+        self.cur.execute(
+            '''SELECT date, SUM(value)
+               FROM morts
                GROUP BY date
                ORDER BY date
             ''')

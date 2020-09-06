@@ -1,3 +1,47 @@
+let dataFunctions = {
+    '#hospits': function(cb) {
+        d3.json('/api/hosp_by_age').then(json => {
+            const labels = {9: '0-9 ans', 19: '10-19 ans', 29: '20-29 ans', 39: '30-39 ans',
+                            49: '40-49 ans', 59: '50-59 ans', 69: '60-69 ans',
+                            79: '70-79 ans', 89: '80-89 ans', 90: '90 ans et plus'};
+
+            cb(newData = {
+                series: _.map(
+                    _.toPairs(_.mapValues(_.groupBy(json, 'age_group'), d => _.map(d, 'value'))),
+                    d => ({name: labels[d[0]], values: d[1]})
+                ),
+                dates: _.uniq(json.map(d => Date.parse(d.date))),
+                can_aggregate: true,
+            });
+        });
+    },
+    '#tests': function(cb) {
+        d3.json('/api/test').then(jsonTest => {
+            d3.json('/api/posit').then(jsonPosit => {
+                if (jsonTest.length !== jsonPosit.length) { return; }
+                cb({
+                    series: [
+                        {values: _.map(jsonPosit, 'value'), color: 'purple'},
+                        {values: _.map(jsonTest, (d, i) => (jsonPosit[i].value * 100 / d.value).toFixed(2)), type: '%', color: 'red'}
+                    ],
+                    dates: _.uniq(jsonPosit.map(d => Date.parse(d.date))),
+                    can_aggregate: false,
+                });
+            });
+        });
+    },
+    '#morts': function(cb) {
+        d3.json('/api/morts').then(json => {
+            cb({
+                series: [
+                    {values: _.map(json, 'value'), color: 'darkred'}
+                ],
+                dates: _.uniq(json.map(d => Date.parse(d.date))),
+            })
+        });
+    }
+}
+
 window.addEventListener('load', () => {
     d3.formatDefaultLocale({
         "thousands": " "
@@ -99,40 +143,11 @@ window.addEventListener('load', () => {
             return;
         }
 
-        if (href === '#hospits') {
-            d3.json('/api/hosp_by_age').then(json => {
-                const labels = {9: '0-9 ans', 19: '10-19 ans', 29: '20-29 ans', 39: '30-39 ans',
-                                49: '40-49 ans', 59: '50-59 ans', 69: '60-69 ans',
-                                79: '70-79 ans', 89: '80-89 ans', 90: '90 ans et plus'};
-                let newData = {
-                    series: _.map(
-                        _.toPairs(_.mapValues(_.groupBy(json, 'age_group'), d => _.map(d, 'value'))),
-                        d => ({name: labels[d[0]], values: d[1]})
-                    ),
-                    dates: _.uniq(json.map(d => Date.parse(d.date))),
-                    can_aggregate: true,
-                };
-
-                data = newData;
-                update();
+        if (href in dataFunctions) {
+            dataFunctions[href]((newData) => {
                 cache_data[href] = newData;
-            });
-        } else if (href === '#tests') {
-            d3.json('/api/test').then(jsonTest => {
-                d3.json('/api/posit').then(jsonPosit => {
-                    if (jsonTest.length !== jsonPosit.length) { return; }
-                    let newData = {
-                        series: [
-                            {values: _.map(jsonPosit, 'value'), color: 'purple'},
-                            {values: _.map(jsonTest, (d, i) => (jsonPosit[i].value * 100 / d.value).toFixed(2)), type: '%', color: 'red'}
-                        ],
-                        dates: _.uniq(jsonPosit.map(d => Date.parse(d.date))),
-                        can_aggregate: false,
-                    }
-                    data = newData;
-                    update();
-                    cache_data[href] = newData;
-                });
+                data = cache_data[href];
+                update();
             });
         }
     };
@@ -163,7 +178,7 @@ window.addEventListener('load', () => {
     const ruler = svg.append('g').append('line').attr('display', 'none')
                                                 .attr('stroke', defaultColor)
                                                 .attr('opacity', '0.2')
-                                                .attr('stroke-width', '1');
+                                                .attr('stroke-width', 1);
     const tt = d3.select('body').append('div').attr('class', 'tooltip').style('opacity', 0);
     
     function hover(path) {
