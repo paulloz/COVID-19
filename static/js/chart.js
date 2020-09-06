@@ -31,10 +31,10 @@ window.addEventListener('load', () => {
     const yAxis = d3.axisLeft(y);
     svg.append('g').attr('transform', `translate(${margin.left}, 0)`).attr('class', 'yaxis');
 
-    const y2 = d3.scaleLinear().domain([0, 100]).range([height - margin.bottom, margin.top]);
+    const y2 = d3.scaleLinear().range([height - margin.bottom, margin.top]);
     const y2Axis = d3.axisRight(y2);
     svg.append('g').attr('transform', `translate(${width - margin.right}, 0)`).attr('class', 'y2axis')
-       .attr('opacity', '0').call(y2Axis);
+       .attr('opacity', '0');
 
     let init = false;
     let aggregate = false;
@@ -68,10 +68,10 @@ window.addEventListener('load', () => {
         svg.selectAll('.xaxis').transition().duration(duration).call(xAxis);
         y.domain([0, d3.max(data.series, d => d3.max(d.values))]).nice();
         svg.selectAll('.yaxis').transition().duration(duration).call(yAxis);
-
-        
+        y2.domain([0, d3.max(_.filter(data.series, d => d.type === '%'), d => d3.max(d.values))]).nice();
         svg.selectAll('.y2axis').transition().duration(duration)
-           .attr('opacity', _.filter(data.series, d => d.type === '%').length ? '1' : '0');
+           .attr('opacity', _.filter(data.series, d => d.type === '%').length ? '1' : '0')
+           .call(y2Axis);
 
         let path = svg.selectAll('.line').data(data.series, d => d.name);
 
@@ -160,6 +160,10 @@ window.addEventListener('load', () => {
 
     const dot = svg.append('g').attr('display', 'none');
     dot.append('circle').attr('r', 3.5);
+    const ruler = svg.append('g').append('line').attr('display', 'none')
+                                                .attr('stroke', defaultColor)
+                                                .attr('opacity', '0.2')
+                                                .attr('stroke-width', '1');
     const tt = d3.select('body').append('div').attr('class', 'tooltip').style('opacity', 0);
     
     function hover(path) {
@@ -169,13 +173,17 @@ window.addEventListener('load', () => {
         function moved(event) {
             event.preventDefault();
             dot.attr('display', null);
+            ruler.attr('display', null);
             const pointer = d3.pointer(event, this);
-            const xm = x.invert(pointer[0]);
-            const ym = y.invert(pointer[1]);
-            const i = d3.bisectCenter(data.dates, xm);
-            const s = d3.least(data.series, d => Math.abs(d.values[i] - ym));
-            dot.attr('transform', `translate(${x(data.dates[i])}, ${s.type !== '%' ? y(s.values[i]) : y2(s.values[i])})`)
+            const i = d3.bisectCenter(data.dates, x.invert(pointer[0]));
+            const s = d3.least(data.series, d => Math.abs((d.type !== '%' ? y(d.values[i]) : y2(d.values[i])) - pointer[1]));
+            const px = x(data.dates[i]);
+            const py = s.type !== '%' ? y(s.values[i]) : y2(s.values[i]);
+            dot.attr('transform', `translate(${px}, ${py})`)
                .attr('fill', s.color || defaultColor);
+            ruler.attr('stroke', s.color || defaultColor);
+            ruler.attr('x1', px).attr('y1', py);
+            ruler.attr('x2', s.type !== '%' ? margin.left : width - margin.right).attr('y2', py);
             const name = s.name != null ? ` (${s.name})` : '';
             const ttPos = [x(data.dates[i]),
                            s.type !== '%' ? y(s.values[i]) : y2(s.values[i])];
@@ -188,6 +196,7 @@ window.addEventListener('load', () => {
 
         function left(event) {
             dot.attr('display', 'none');
+            ruler.attr('display', 'none');
             tt.style('opacity', 0);
         }
     }
