@@ -62,7 +62,7 @@ def main(d):
             getattr(db, add_method)(*line)
 
     models = [
-        # ('hosp', 'covid_hospit_clage10', 'hosp_by_age_group'),
+        ('hosp', 'covid_hospit_clage10', 'hosp_by_age_group'),
         ('p', 'sp_pos_quot', 'posit_by_age_group'),
         ('t', 'sp_pos_quot', 'test_by_age_group'),
     ]
@@ -72,10 +72,4 @@ def main(d):
 
 
 if __name__ == '__main__':
-    if os.environ.get('FROM_START'):
-        d = date(2020, 5, 14)
-        while d < date.today():
-            main(d)
-            d += timedelta(1)
-    else:
-        main()
+    main()
