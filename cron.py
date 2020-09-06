@@ -25,7 +25,7 @@ def get_indicator(indic, dataset, filters={}):
     return None
 
 
-def main(d):
+def main(d=None):
     db = Db()
     # This program is meant to run at night to retrieve data for previous day.
     yesterday = ((d or date.today()) + timedelta(-1)).strftime('%Y-%m-%d')
