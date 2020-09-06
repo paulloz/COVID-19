@@ -1,0 +1,5 @@
+a.navbar-item.is-active {
+    background-color: #fafafa;
+    color: #3273dc;
+    border-bottom: 2px solid #3273dc;
+}
