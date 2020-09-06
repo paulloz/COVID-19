@@ -19,7 +19,7 @@ window.addEventListener('load', () => {
     const width = chart.node().clientWidth;
     const height = 600;
     const margin = {top: 20, right: 30, bottom: 30, left: 50};
-    const defaultColor = '#bababa';
+    const defaultColor = '#555';
 
     const svg = chart.append('svg').attr('viewBox', [0, 0, width, height]).style('overflow', 'hidden');
 
@@ -101,10 +101,13 @@ window.addEventListener('load', () => {
 
         if (href === '#hospits') {
             d3.json('/api/hosp_by_age').then(json => {
+                const labels = {9: '0-9 ans', 19: '10-19 ans', 29: '20-29 ans', 39: '30-39 ans',
+                                49: '40-49 ans', 59: '50-59 ans', 69: '60-69 ans',
+                                79: '70-79 ans', 89: '80-89 ans', 90: '90 ans et plus'};
                 let newData = {
                     series: _.map(
                         _.toPairs(_.mapValues(_.groupBy(json, 'age_group'), d => _.map(d, 'value'))),
-                        d => ({name: d[0], values: d[1]})
+                        d => ({name: labels[d[0]], values: d[1]})
                     ),
                     dates: _.uniq(json.map(d => Date.parse(d.date))),
                     can_aggregate: true,
@@ -157,11 +160,7 @@ window.addEventListener('load', () => {
 
     const dot = svg.append('g').attr('display', 'none');
     dot.append('circle').attr('r', 3.5);
-    dot.append('text').attr('font-family', 'sans-serif')
-                      .attr('font-size', 12)
-                      .attr('text-anchor', 'middle')
-                      .attr('fill', 'black')
-                      .attr('y', -8);
+    const tt = d3.select('body').append('div').attr('class', 'tooltip').style('opacity', 0);
     
     function hover(path) {
         svg.on('mousemove', moved)
@@ -178,11 +177,18 @@ window.addEventListener('load', () => {
             dot.attr('transform', `translate(${x(data.dates[i])}, ${s.type !== '%' ? y(s.values[i]) : y2(s.values[i])})`)
                .attr('fill', s.color || defaultColor);
             const name = s.name != null ? ` (${s.name})` : '';
-            dot.select('text').text(`${formatDateFull(data.dates[i])} : ${s.values[i]}${name}`);
+            const ttPos = [x(data.dates[i]),
+                           s.type !== '%' ? y(s.values[i]) : y2(s.values[i])];
+            tt.html(`${formatDateFull(data.dates[i])} : ${s.values[i]}${name}`)
+              .style('opacity', 1)
+              .style('color', s.color || defaultColor)
+              .style('left', `${ttPos[0] + svg.node().getBoundingClientRect().x}px`)
+              .style('top', `${ttPos[1] + svg.node().getBoundingClientRect().y}px`);
         }
 
         function left(event) {
             dot.attr('display', 'none');
+            tt.style('opacity', 0);
         }
     }
 });
