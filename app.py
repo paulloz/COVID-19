@@ -1,4 +1,4 @@
-from flask import Flask, jsonify, send_from_directory
+from flask import Flask, jsonify, render_template, send_from_directory
 
 from db import Db
 
@@ -36,7 +36,7 @@ def send_css(path):
 
 @app.route('/')
 def index():
-    return send_from_directory('', 'index.html')
+    return render_template('index.html')
 
 
 if __name__ == '__main__':
