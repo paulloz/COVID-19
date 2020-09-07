@@ -36,8 +36,8 @@ def main(d=None):
         # For all age groups available.
         for age_group in [9, 19, 29, 39, 49, 59, 69, 79, 89, 90]:
             print(f'Retrieve {indic}/{dataset}' +
-                  (f'for age_group {age_group}' if not no_age_group else '') +
-                  f'on {yesterday}...')
+                  (f' for age_group {age_group}' if not no_age_group else '') +
+                  f' on {yesterday}...')
             # First, retrieve the data from API
             filters = dict(cl_age90=f'{age_group:02}', jour=yesterday)
             if no_age_group:

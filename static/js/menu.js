@@ -19,8 +19,8 @@ window.addEventListener('load', () => {
             document.querySelectorAll('.navbar-item.is-active').forEach(el => el.classList.remove('is-active'));
             e.target.classList.add('is-active');
 
-            document.querySelectorAll('.container .column.is-half > div').forEach(el => el.classList.add('is-hidden'));
-            const p = document.querySelector(`.container .column.is-half > div.${_.trimStart(href, '#')}`);
+            document.querySelectorAll('.main-content > div').forEach(el => el.classList.add('is-hidden'));
+            const p = document.querySelector(`.main-content > div.${_.trimStart(href, '#')}`);
             if (p != null)
                 p.classList.remove('is-hidden');
             document.chart(href);

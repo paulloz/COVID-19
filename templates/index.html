@@ -16,6 +16,7 @@
 
         <script src="https://cdn.jsdelivr.net/npm/lodash@4.17.20/lodash.min.js"></script>
         <script src="https://d3js.org/d3.v6.min.js"></script>
+        <script src="/static/js/tools.js"></script>
         <script src="/static/js/chart.js"></script>
         <script src="/static/js/menu.js"></script>
     </head>
@@ -42,8 +43,38 @@
         <section class="section">
             <div class="container">
                 <div class="chart"></div>
-                <div class="columns is-centered pt-4">
+                <div class="aggregate columns is-centered pt-4">
                     <div class="column is-half">
+                        <div class="columns is-mobile is-vcentered mb-3">
+                            <div class="column has-text-right">
+                                <strong>Afficher les données aggrégées ?</strong>
+                            </div>
+                            <div class="column is-narrow">
+                                <div class="buttons has-addons">
+                                    <button class="yes button">Oui</button>
+                                    <button class="no button is-danger is-selected">Non</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="mean-by-n columns is-centered pt-4">
+                    <div class="column is-half">
+                        <div class="columns is-mobile is-vcentered mb-3">
+                            <div class="column has-text-right">
+                                <strong>Lisser les données <span style="white-space:nowrap">(moyenne sur 7 jours glissants)</span> ?</strong>
+                            </div>
+                            <div class="column is-narrow">
+                                <div class="buttons has-addons">
+                                    <button class="yes button">Oui</button>
+                                    <button class="no button is-danger is-selected">Non</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="columns is-centered">
+                    <div class="column is-half main-content">
                         <div class="tests is-hidden">
                             <p>
                                 <strong style="color:purple">Nombre de personnes testées positives</strong> et <strong style="color:red">taux de positivité</strong> d'après les données <span style="white-space:nowrap">SI-DEP</span> entre le <span class="start-date"></span> et le <span class="end-date"></span>.
@@ -54,18 +85,8 @@
                             </p>
                         </div>
                         <div class="hospits is-hidden">
-                            <div class="columns is-mobile is-vcentered mb-3">
-                                <div class="column has-text-right">
-                                    <strong>Afficher les données aggrégées ?</strong>
-                                </div>
-                                <div class="column is-narrow">
-                                    <div class="buttons has-addons">
-                                        <button class="yes button">Oui</button>
-                                        <button class="no button is-danger is-selected">Non</button>
-                                    </div>
-                                </div>
-                            </div>
-                            <p style="clear:right">Nombre de personnes hospitalisées par tranches d'âge (d'après les données des établissements de santé déclarant des cas confirmés) entre le <span class="start-date"></span> et le <span class="end-date"></span>.</p>
+                            <p style="clear:right">
+                                <strong style="color:#555">Nombre de personnes hospitalisées par tranches d'âge</strong> (d'après les données des établissements de santé déclarant des cas confirmés) entre le <span class="start-date"></span> et le <span class="end-date"></span>.</p>
                         </div>
                         <div class="morts is-hidden">
                             <p>

@@ -1,48 +1,67 @@
-let dataFunctions = {
-    '#hospits': function(cb) {
-        d3.json('/api/hosp_by_age').then(json => {
-            const labels = {9: '0-9 ans', 19: '10-19 ans', 29: '20-29 ans', 39: '30-39 ans',
-                            49: '40-49 ans', 59: '50-59 ans', 69: '60-69 ans',
-                            79: '70-79 ans', 89: '80-89 ans', 90: '90 ans et plus'};
-
-            cb(newData = {
-                series: _.map(
-                    _.toPairs(_.mapValues(_.groupBy(json, 'age_group'), d => _.map(d, 'value'))),
-                    d => ({name: labels[d[0]], values: d[1]})
-                ),
-                dates: _.uniq(json.map(d => Date.parse(d.date))),
-                can_aggregate: true,
-            });
-        });
-    },
-    '#tests': function(cb) {
-        d3.json('/api/test').then(jsonTest => {
-            d3.json('/api/posit').then(jsonPosit => {
-                if (jsonTest.length !== jsonPosit.length) { return; }
-                cb({
-                    series: [
-                        {values: _.map(jsonPosit, 'value'), color: 'purple'},
-                        {values: _.map(jsonTest, (d, i) => (jsonPosit[i].value * 100 / d.value).toFixed(2)), type: '%', color: 'red'}
-                    ],
-                    dates: _.uniq(jsonPosit.map(d => Date.parse(d.date))),
-                    can_aggregate: false,
+window.addEventListener('load', () => {
+    let dataFunctions = {
+        '#hospits': function(cb) {
+            d3.json('/api/hosp_by_age').then(json => {
+                const labels = {9: '0-9 ans', 19: '10-19 ans', 29: '20-29 ans', 39: '30-39 ans',
+                                49: '40-49 ans', 59: '50-59 ans', 69: '60-69 ans',
+                                79: '70-79 ans', 89: '80-89 ans', 90: '90 ans et plus'};
+    
+                cb(newData = {
+                    series: _.map(
+                        _.toPairs(_.mapValues(_.groupBy(json, 'age_group'), d => _.map(d, 'value'))),
+                        (d, i) => ({name: labels[d[0]], values: d[1], id: 'h' + i})
+                    ),
+                    dates: _.uniq(json.map(d => Date.parse(d.date))),
+                    can_aggregate: true,
+                    can_mean_over: false,
                 });
             });
-        });
-    },
-    '#morts': function(cb) {
-        d3.json('/api/morts').then(json => {
-            cb({
-                series: [
-                    {values: _.map(json, 'value'), color: 'darkred'}
-                ],
-                dates: _.uniq(json.map(d => Date.parse(d.date))),
-            })
-        });
+        },
+        '#tests': function(cb) {
+            d3.json('/api/test').then(jsonTest => {
+                d3.json('/api/posit').then(jsonPosit => {
+                    if (jsonTest.length !== jsonPosit.length) { return; }
+                    cb({
+                        series: [
+                            {values: _.map(jsonPosit, 'value'), color: 'purple', id: 't1'},
+                            {values: _.map(jsonTest, (d, i) => roundf(jsonPosit[i].value * 100 / d.value)), type: '%',
+                             color: 'red', id: 't2'},
+                        ],
+                        dates: _.uniq(jsonPosit.map(d => Date.parse(d.date))),
+                        can_aggregate: false, can_mean_over: true,
+                    });
+                    // cb(_data, {
+                    //     series: [
+                    //         {values: _.map(doMeanOver(_data.series[0].values), Math.round), color: _data.series[0].color,
+                    //          id: _data.series[0].id},
+                    //         {values: _.map(doMeanOver(_data.series[1].values), roundf), color: _data.series[1].color,
+                    //          type: _data.series[1].type, id: _data.series[1].id},
+                    //     ],
+                    //     dates: _.drop(_data.dates, meanOverN),
+                    //     can_mean_over: true, can_aggregate: false,
+                    // });
+                });
+            });
+        },
+        '#morts': function(cb) {
+            d3.json('/api/morts').then(json => {
+                cb({
+                    series: [
+                        {values: _.map(json, 'value'), color: 'darkred', id: 'm1'}
+                    ],
+                    dates: _.uniq(json.map(d => Date.parse(d.date))),
+                    can_aggregate: false, can_mean_over: true,
+                });
+                // cb(_data, {
+                //     series: [{values: _.map(doMeanOver(_data.series[0].values), Math.round), color: _data.series[0].color,
+                //               id: _data.series[0].id}],
+                //     dates: _.drop(_data.dates, meanOverN),
+                //     can_mean_over: true, can_aggregate: false,
+                // })
+            });
+        }
     }
-}
-
-window.addEventListener('load', () => {
+    
     d3.formatDefaultLocale({
         "thousands": " "
     });
@@ -82,13 +101,32 @@ window.addEventListener('load', () => {
 
     let init = false;
     let aggregate = false;
-    let data = null;
+    let useMeanByNData = false;
+    let href = false;
+
+    const cache_data = {};
+    const cache_data_mean_over = {};
 
     function update() {
         const duration = init ? 1000 : 0;
         init = true;
 
+        let prev_data = d3.local();
+        
+        let data = cache_data[href];
+        if (data == null) { return; }
+
+        if (cache_data[href].can_mean_over) {
+            show('.mean-by-n');
+            if (useMeanByNData) {
+                data = cache_data_mean_over[data.href];
+            }
+        } else {
+            hide('.mean-by-n');
+        }
+
         if (data.can_aggregate) {
+            show('.aggregate');
             data.series = _.filter(data.series, d => d.name !== 'Total');
             if (aggregate) {
                 data.series.push({
@@ -96,15 +134,17 @@ window.addEventListener('load', () => {
                     values: _.reduce(data.series, (acc, d) => _.map(d.values, (v, i) => (acc[i] || 0) + v, []))
                 });
             }
+        } else {
+            hide('.aggregate');
         }
 
         const line = d3.line()
-                       .defined(d => !isNaN(d))
+                    //    .defined(d => d != null)
                        .x((d, i) => x(data.dates[i]))
                        .y(d => y(d));
 
         const linePercent = d3.line()
-                              .defined(d => !isNaN(d))
+                            //   .defined(d => d != null)
                               .x((d, i) => x(data.dates[i]))
                               .y(d => y2(d));
 
@@ -117,16 +157,25 @@ window.addEventListener('load', () => {
            .attr('opacity', _.filter(data.series, d => d.type === '%').length ? '1' : '0')
            .call(y2Axis);
 
-        let path = svg.selectAll('.line').data(data.series, d => d.name);
+        let path = svg.selectAll('.line').data(data.series, d => d.id);
 
         path.enter().append('path').attr('class', 'line').attr('opacity', '0')
-            .merge(path).transition().duration(duration).attr('fill', 'none')
-                                                        .attr('stroke', d => d.color || defaultColor)
-                                                        .attr('stroke-width', 1.5)
-                                                        .attr('stroke-linejoin', 'round')
-                                                        .attr('stroke-linecap', 'round')
-                                                        .attr('opacity', '1')
-                                                        .attr('d', d => d.type !== '%' ? line(d.values) : linePercent(d.values));
+            .merge(path)
+            // .datum(data.filter(line.defined()))
+            .transition().duration(duration)
+            .attr('fill', 'none')
+            .attr('stroke', d => d.color || defaultColor)
+            .attr('stroke-width', 1.5)
+            .attr('stroke-linejoin', 'round')
+            .attr('stroke-linecap', 'round')
+            .attr('opacity', '1')
+            .attr('d', (d) => (d.type !== '%' ? line : linePercent)(d.values))
+            .style('clip-path', () => {
+                if (useMeanByNData) {
+                    const xClip = x(data.dates[meanOverN - 1]) - margin.left + 1;
+                    return `polygon(${xClip}px 0, 100% 0, 100% 100%, ${xClip}px 100%)`
+                }
+            });
         path.exit().transition().duration(duration).attr('opacity', '0').remove();
 
         d3.selectAll('.start-date').text(formatDateFull(data.dates[0]));
@@ -135,62 +184,100 @@ window.addEventListener('load', () => {
         hover(path);
     }
 
-    const cache_data = {};
-    document.chart = (href) => {
+    const meanOverN = 7;
+    document.chart = (_href) => {
+        href = _href;
+
         if (cache_data[href] != null) {
-            data = cache_data[href];
-            update();
-            return;
+            return update();
         }
 
         if (href in dataFunctions) {
             dataFunctions[href]((newData) => {
+                newData.href = href;
                 cache_data[href] = newData;
-                data = cache_data[href];
+
+                if (cache_data[href].can_mean_over) {
+                    cache_data_mean_over[href] = _.cloneDeep(cache_data[href]);
+                    cache_data_mean_over[href].can_mean_over = false;
+                    // cache_data_mean_over[href].dates = _.drop(cache_data_mean_over[href].dates, meanOverN),
+                    cache_data_mean_over[href].series = _.map(cache_data_mean_over[href].series, serie => {
+                        serie.values = _.map(serie.values, (v, i) => 
+                            i < meanOverN - 1
+                                ? serie.values[meanOverN - 1]
+                                : roundf(_.sum(serie.values.slice(i - meanOverN + 1, i + 1)) / meanOverN, serie.type === '%')
+                        );
+                        return serie;
+                    })
+                }
+
                 update();
             });
         }
     };
 
-    const yesButton = document.querySelector('.yes');
-    const noButton = document.querySelector('.no');
-
-    yesButton.addEventListener('click', (e) => {
+    const yesAggButton = document.querySelector('.aggregate .yes');
+    const noAggButton = document.querySelector('.aggregate .no');
+    yesAggButton.addEventListener('click', (e) => {
         if (!e.target.classList.contains('is-selected')) {
-            noButton.classList.remove('is-selected', 'is-danger');
-            yesButton.classList.add('is-selected', 'is-success');
+            noAggButton.classList.remove('is-selected', 'is-danger');
+            yesAggButton.classList.add('is-selected', 'is-success');
             aggregate = true;
             update();
         }
     });
-
-    noButton.addEventListener('click', (e) => {
+    noAggButton.addEventListener('click', (e) => {
         if (!e.target.classList.contains('is-selected')) {
-            yesButton.classList.remove('is-selected', 'is-success');
-            noButton.classList.add('is-selected', 'is-danger');
+            yesAggButton.classList.remove('is-selected', 'is-success');
+            noAggButton.classList.add('is-selected', 'is-danger');
             aggregate = false;
+            update();
+        }
+    });
+
+    const yesMeanByNButton = document.querySelector('.mean-by-n .yes');
+    const noMeanByNButton = document.querySelector('.mean-by-n .no');
+    yesMeanByNButton.addEventListener('click', (e) => {
+        if (!e.target.classList.contains('is-selected')) {
+            noMeanByNButton.classList.remove('is-selected', 'is-danger');
+            yesMeanByNButton.classList.add('is-selected', 'is-success');
+            useMeanByNData = true;
+            update();
+        }
+    });
+    noMeanByNButton.addEventListener('click', (e) => {
+        if (!e.target.classList.contains('is-selected')) {
+            yesMeanByNButton.classList.remove('is-selected', 'is-success');
+            noMeanByNButton.classList.add('is-selected', 'is-danger');
+            useMeanByNData = false;
             update();
         }
     });
 
     const dot = svg.append('g').attr('display', 'none');
     dot.append('circle').attr('r', 3.5);
-    const ruler = svg.append('g').append('line').attr('display', 'none')
-                                                .attr('stroke', defaultColor)
-                                                .attr('opacity', '0.2')
-                                                .attr('stroke-width', 1);
-    const tt = d3.select('body').append('div').attr('class', 'tooltip').style('opacity', 0);
-    
+    const ruler = svg.append('g').append('line')
+                     .attr('display', 'none')
+                     .attr('stroke', defaultColor)
+                     .attr('opacity', '0.2')
+                     .attr('stroke-width', 1);
+    const tt = d3.select('body').append('div')
+                 .attr('class', 'tooltip')
+                 .style('opacity', 0);
     function hover(path) {
         svg.on('mousemove', moved)
            .on('mouseleave', left);
 
         function moved(event) {
             event.preventDefault();
-            dot.attr('display', null);
-            ruler.attr('display', null);
+            let data = useMeanByNData ? cache_data_mean_over[href] : cache_data[href];
+
             const pointer = d3.pointer(event, this);
             const i = d3.bisectCenter(data.dates, x.invert(pointer[0]));
+            if (useMeanByNData && i < meanOverN - 1) { return left(event); }
+
+            dot.attr('display', null);
+            ruler.attr('display', null);
             const s = d3.least(data.series, d => Math.abs((d.type !== '%' ? y(d.values[i]) : y2(d.values[i])) - pointer[1]));
             const px = x(data.dates[i]);
             const py = s.type !== '%' ? y(s.values[i]) : y2(s.values[i]);
