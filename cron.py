@@ -81,5 +81,4 @@ def main(d=None):
 
 
 if __name__ == '__main__':
-    d = date(2020, 3, 20)
-    while d < date.today():
+    main()
