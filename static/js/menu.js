@@ -13,7 +13,7 @@ window.addEventListener('load', () => {
         });
     }
 
-    document.querySelectorAll('.navbar-item').forEach(el => {
+    document.querySelectorAll('a.navbar-item').forEach(el => {
         el.addEventListener('click', (e) => {
             const href = e.target.getAttribute('href');
             document.querySelectorAll('.navbar-item.is-active').forEach(el => el.classList.remove('is-active'));
