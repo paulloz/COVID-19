@@ -23,7 +23,8 @@ class Db():
                    'Grand Est', 'Pays de la Loire', 'Bretagne',
                    'Nouvelle-Aquitaine', 'Occitanie', 'Auvergne-Rhône-Alpes',
                    'Provence-Alpes-Côte d\'Azur', 'Corse',
-                   'Collectivités d\'outre-mer']
+                   'Miquelon-Langlade et Saint Pierre', 'Saint-Barthélemy',
+                   'Saint-Martin']
         cur_read = self.conn.cursor()
         for i, region in enumerate(regions):
             cur_read.execute('SELECT p_id FROM regions WHERE id=?', (i,))
@@ -75,7 +76,7 @@ class Db():
         cur.close()
         return n
 
-    def check_n_lines_or_delete(self, table, date, n=190):
+    def check_n_lines_or_delete(self, table, date, n=210):
         m = self.get_n_lines_for_date(table, date)
         if m > 0:
             if m < n:
@@ -94,7 +95,7 @@ class Db():
         return self.check_n_lines_or_delete('test_by_age_group', date)
 
     def check_data_morts(self, date):
-        return self.check_n_lines_or_delete('morts', date, 19)
+        return self.check_n_lines_or_delete('morts', date, 21)
 
     def get_by_age_group(self):
         self.cur.execute(
