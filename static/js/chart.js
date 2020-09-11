@@ -30,16 +30,6 @@ window.addEventListener('load', () => {
                         dates: _.uniq(jsonPosit.map(d => Date.parse(d.date))),
                         can_aggregate: false, can_mean_over: true,
                     });
-                    // cb(_data, {
-                    //     series: [
-                    //         {values: _.map(doMeanOver(_data.series[0].values), Math.round), color: _data.series[0].color,
-                    //          id: _data.series[0].id},
-                    //         {values: _.map(doMeanOver(_data.series[1].values), roundf), color: _data.series[1].color,
-                    //          type: _data.series[1].type, id: _data.series[1].id},
-                    //     ],
-                    //     dates: _.drop(_data.dates, meanOverN),
-                    //     can_mean_over: true, can_aggregate: false,
-                    // });
                 });
             });
         },
@@ -52,12 +42,6 @@ window.addEventListener('load', () => {
                     dates: _.uniq(json.map(d => Date.parse(d.date))),
                     can_aggregate: false, can_mean_over: true,
                 });
-                // cb(_data, {
-                //     series: [{values: _.map(doMeanOver(_data.series[0].values), Math.round), color: _data.series[0].color,
-                //               id: _data.series[0].id}],
-                //     dates: _.drop(_data.dates, meanOverN),
-                //     can_mean_over: true, can_aggregate: false,
-                // })
             });
         }
     }
