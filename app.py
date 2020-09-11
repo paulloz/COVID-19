@@ -24,6 +24,12 @@ def test():
         return jsonify(db.get_test())
 
 
+@app.route('/api/reas')
+def reas():
+    with Db() as db:
+        return jsonify(db.get_reas())
+
+
 @app.route('/api/morts')
 def morts():
     with Db() as db:

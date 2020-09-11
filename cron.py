@@ -71,6 +71,7 @@ def main(d=None):
         ('hosp', 'covid_hospit_clage10', 'hosp_by_age_group'),
         ('p', 'sp_pos_quot', 'posit_by_age_group'),
         ('t', 'sp_pos_quot', 'test_by_age_group'),
+        ('rea', 'covid_hospit_clage10', 'reas_by_age_group'),
     ], True: [
         ('incid_dc', 'covid_hospit_incid', 'morts')
     ]}

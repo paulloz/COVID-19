@@ -1,15 +1,15 @@
 window.addEventListener('load', () => {
+    const ageGroupLabels = {9: '0-9 ans', 19: '10-19 ans', 29: '20-29 ans', 39: '30-39 ans',
+                            49: '40-49 ans', 59: '50-59 ans', 69: '60-69 ans',
+                            79: '70-79 ans', 89: '80-89 ans', 90: '90 ans et plus'};
+
     let dataFunctions = {
         '#hospits': function(cb) {
             d3.json('/api/hosp_by_age').then(json => {
-                const labels = {9: '0-9 ans', 19: '10-19 ans', 29: '20-29 ans', 39: '30-39 ans',
-                                49: '40-49 ans', 59: '50-59 ans', 69: '60-69 ans',
-                                79: '70-79 ans', 89: '80-89 ans', 90: '90 ans et plus'};
-    
-                cb(newData = {
+                cb({
                     series: _.map(
                         _.toPairs(_.mapValues(_.groupBy(json, 'age_group'), d => _.map(d, 'value'))),
-                        (d, i) => ({name: labels[d[0]], values: d[1], id: 'h' + i})
+                        (d, i) => ({name: ageGroupLabels[d[0]], values: d[1], id: 'h' + i})
                     ),
                     dates: _.uniq(json.map(d => Date.parse(d.date))),
                     can_aggregate: true,
@@ -31,6 +31,19 @@ window.addEventListener('load', () => {
                         can_aggregate: false, can_mean_over: true,
                     });
                 });
+            });
+        },
+        '#reas': function(cb) {
+            d3.json('/api/reas').then(json => {
+                cb({
+                    series: _.map(
+                        _.toPairs(_.mapValues(_.groupBy(json, 'age_group'), d => _.map(d, 'value'))),
+                        (d, i) => ({name: ageGroupLabels[d[0]], values: d[1], color: 'midnightblue', id: 'r' + i})
+                    ),
+                    dates: _.uniq(json.map(d => Date.parse(d.date))),
+                    can_aggregate: true,
+                    can_mean_over: false,
+                })
             });
         },
         '#morts': function(cb) {
@@ -114,7 +127,7 @@ window.addEventListener('load', () => {
             data.series = _.filter(data.series, d => d.name !== 'Total');
             if (aggregate) {
                 data.series.push({
-                    name: 'Total',
+                    name: 'Total', color: data.series[0].color,
                     values: _.reduce(data.series, (acc, d) => _.map(d.values, (v, i) => (acc[i] || 0) + v, []))
                 });
             }
@@ -123,12 +136,10 @@ window.addEventListener('load', () => {
         }
 
         const line = d3.line()
-                    //    .defined(d => d != null)
                        .x((d, i) => x(data.dates[i]))
                        .y(d => y(d));
 
         const linePercent = d3.line()
-                            //   .defined(d => d != null)
                               .x((d, i) => x(data.dates[i]))
                               .y(d => y2(d));
 
@@ -184,7 +195,6 @@ window.addEventListener('load', () => {
                 if (cache_data[href].can_mean_over) {
                     cache_data_mean_over[href] = _.cloneDeep(cache_data[href]);
                     cache_data_mean_over[href].can_mean_over = false;
-                    // cache_data_mean_over[href].dates = _.drop(cache_data_mean_over[href].dates, meanOverN),
                     cache_data_mean_over[href].series = _.map(cache_data_mean_over[href].series, serie => {
                         serie.values = _.map(serie.values, (v, i) => 
                             i < meanOverN - 1
@@ -254,7 +264,7 @@ window.addEventListener('load', () => {
 
         function moved(event) {
             event.preventDefault();
-            let data = useMeanByNData ? cache_data_mean_over[href] : cache_data[href];
+            let data = useMeanByNData && cache_data_mean_over[href] ? cache_data_mean_over[href] : cache_data[href];
 
             const pointer = d3.pointer(event, this);
             const i = d3.bisectCenter(data.dates, x.invert(pointer[0]));
